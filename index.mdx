@@ -1,0 +1,824 @@
+---
+title: 'Parcel Tracer'
+mode: 'custom'
+---
+
+<style>{`
+  /* Force navbar to be white from the beginning - target all possible navbar selectors */
+  nav,
+  header,
+  [class*="navbar"],
+  [class*="Navbar"],
+  [class*="nav-bar"],
+  [class*="topbar"],
+  [id*="navbar"],
+  [id*="nav-bar"] {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  }
+  
+  /* Ensure navbar stays white on scroll */
+  nav.scrolled,
+  header.scrolled,
+  [class*="scrolled"],
+  [class*="navbar"].scrolled,
+  nav[class*="scrolled"],
+  header[class*="scrolled"] {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+  }
+  
+  /* Make sure text is visible on white background */
+  nav a,
+  header a,
+  [class*="navbar"] a,
+  nav button,
+  header button {
+    color: #422462 !important;
+  }
+  
+  /* Target Mintlify specific navbar classes */
+  .mint-navbar,
+  .navbar,
+  #navbar {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    z-index: 1000 !important;
+    position: relative !important;
+  }
+  
+  /* Ensure page content doesn't overlap navbar */
+  main,
+  [class*="main"],
+  [id*="main"] {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  
+  /* Remove any blur effects from navbar and hero section */
+  nav *,
+  header *,
+  [class*="navbar"] * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Ensure hero section doesn't have blurry edges */
+  div[style*="linear-gradient"][style*="71459A"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-top: none !important;
+  }
+`}</style>
+
+<div style={{
+  backgroundImage: 'radial-gradient(ellipse 800px 600px at 0% 0%, rgba(113, 69, 154, 0.3) 0%, transparent 50%), radial-gradient(ellipse 800px 600px at 100% 100%, rgba(66, 36, 98, 0.4) 0%, transparent 50%), linear-gradient(135deg, #71459A 0%, #5a3578 20%, #4d2a66 40%, #422462 60%, #422462 100%)',
+  color: 'white',
+  padding: '100px 20px 120px',
+  textAlign: 'center',
+  marginTop: '0',
+  marginLeft: '0',
+  marginRight: '0',
+  marginBottom: '0',
+  position: 'relative',
+  overflow: 'hidden',
+  width: '100%'
+}}>
+  <div style={{
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.1) 0%, transparent 50%)',
+    pointerEvents: 'none'
+  }}></div>
+  <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+    <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <img 
+        src="/logo/main-logo.png" 
+        alt="Parcel Tracer Logo" 
+        style={{
+          height: '80px',
+          width: 'auto',
+          marginBottom: '20px',
+          filter: 'brightness(0) invert(1)',
+          display: 'block',
+          margin: '0 auto 20px'
+        }}
+      />
+    </div>
+    <h1 style={{ 
+      fontSize: 'clamp(2.5rem, 5vw, 4rem)', 
+      fontWeight: '800', 
+      marginBottom: '28px',
+      lineHeight: '1.1',
+      color: 'white',
+      letterSpacing: '-0.02em'
+    }}>
+      Streamline Your Logistics Operations
+    </h1>
+    <p style={{ 
+      fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', 
+      marginBottom: '48px',
+      opacity: '0.95',
+      maxWidth: '700px',
+      margin: '0 auto 48px',
+      color: 'white',
+      lineHeight: '1.6'
+    }}>
+      A comprehensive platform for delivery companies, merchants, and drivers to manage orders, track deliveries, and optimize logistics workflows with ease.
+    </p>
+    <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <a 
+        href="https://prod.parceltracer.app" 
+        style={{
+          backgroundColor: 'white',
+          color: '#71459A',
+          padding: '18px 40px',
+          borderRadius: '12px',
+          textDecoration: 'none',
+          fontWeight: '700',
+          fontSize: '1.1rem',
+          display: 'inline-block',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        Open App →
+      </a>
+      <a 
+        href="/api-reference/quickstart" 
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.15)',
+          color: 'white',
+          padding: '18px 40px',
+          borderRadius: '12px',
+          textDecoration: 'none',
+          fontWeight: '700',
+          fontSize: '1.1rem',
+          border: '2px solid rgba(255,255,255,0.3)',
+          display: 'inline-block',
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        View API Docs
+      </a>
+    </div>
+  </div>
+</div>
+
+<div style={{ 
+  maxWidth: '1280px', 
+  margin: '0 auto', 
+  padding: '100px 24px',
+  backgroundColor: '#ffffff'
+}}>
+  
+  <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+    <h2 style={{ 
+      fontSize: 'clamp(2rem, 4vw, 3rem)', 
+      fontWeight: '800', 
+      marginBottom: '20px',
+      color: '#422462',
+      letterSpacing: '-0.02em'
+    }}>
+      Everything You Need for Modern Logistics
+    </h2>
+    <p style={{ 
+      fontSize: '1.2rem', 
+      color: '#64748b',
+      maxWidth: '700px',
+      margin: '0 auto',
+      lineHeight: '1.7'
+    }}>
+      Powerful features designed to streamline your delivery operations and boost efficiency
+    </p>
+  </div>
+
+  <div style={{ 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', 
+    gap: '32px',
+    marginBottom: '100px'
+  }}>
+    <div style={{
+      padding: '40px',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(135deg, rgba(113, 69, 154, 0.1) 0%, rgba(66, 36, 98, 0.1) 100%)',
+        borderRadius: '0 20px 0 100px'
+      }}></div>
+      <div style={{ 
+        width: '64px', 
+        height: '64px', 
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #71459A 0%, #422462 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '28px',
+        fontSize: '32px',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 4px 12px rgba(113, 69, 154, 0.3)'
+      }}>
+        📦
+      </div>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        fontWeight: '700', 
+        marginBottom: '16px',
+        color: '#422462',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Order Management
+      </h3>
+      <p style={{ 
+        color: '#64748b', 
+        lineHeight: '1.7',
+        marginBottom: '24px',
+        fontSize: '1rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Create, track, and manage orders with real-time status updates. Support for multiple delivery states, payment tracking, and comprehensive order history.
+      </p>
+      <a 
+        href="/models/orders" 
+        style={{
+          color: '#71459A',
+          textDecoration: 'none',
+          fontWeight: '600',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.95rem',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        Learn more →
+      </a>
+    </div>
+
+    <div style={{
+      padding: '40px',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(135deg, rgba(113, 69, 154, 0.1) 0%, rgba(66, 36, 98, 0.1) 100%)',
+        borderRadius: '0 20px 0 100px'
+      }}></div>
+      <div style={{ 
+        width: '64px', 
+        height: '64px', 
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #71459A 0%, #422462 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '28px',
+        fontSize: '32px',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 4px 12px rgba(113, 69, 154, 0.3)'
+      }}>
+        🚚
+      </div>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        fontWeight: '700', 
+        marginBottom: '16px',
+        color: '#422462',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Driver & Fleet Management
+      </h3>
+      <p style={{ 
+        color: '#64748b', 
+        lineHeight: '1.7',
+        marginBottom: '24px',
+        fontSize: '1rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Assign orders to drivers, track delivery progress, manage driver accounts, and handle commissions. Mobile app support for seamless on-the-go operations.
+      </p>
+      <a 
+        href="/models/customers" 
+        style={{
+          color: '#71459A',
+          textDecoration: 'none',
+          fontWeight: '600',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.95rem',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        Learn more →
+      </a>
+    </div>
+
+    <div style={{
+      padding: '40px',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(135deg, rgba(113, 69, 154, 0.1) 0%, rgba(66, 36, 98, 0.1) 100%)',
+        borderRadius: '0 20px 0 100px'
+      }}></div>
+      <div style={{ 
+        width: '64px', 
+        height: '64px', 
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #71459A 0%, #422462 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '28px',
+        fontSize: '32px',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 4px 12px rgba(113, 69, 154, 0.3)'
+      }}>
+        💰
+      </div>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        fontWeight: '700', 
+        marginBottom: '16px',
+        color: '#422462',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Accounting & Invoicing
+      </h3>
+      <p style={{ 
+        color: '#64748b', 
+        lineHeight: '1.7',
+        marginBottom: '24px',
+        fontSize: '1rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Automated invoice generation for drivers and merchants. Track payment states, generate profit reports, and maintain comprehensive financial records.
+      </p>
+      <a 
+        href="/models/orders" 
+        style={{
+          color: '#71459A',
+          textDecoration: 'none',
+          fontWeight: '600',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.95rem',
+          position: 'relative',
+        zIndex: 1
+        }}
+      >
+        Learn more →
+      </a>
+    </div>
+
+    <div style={{
+      padding: '40px',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(135deg, rgba(113, 69, 154, 0.1) 0%, rgba(66, 36, 98, 0.1) 100%)',
+        borderRadius: '0 20px 0 100px'
+      }}></div>
+      <div style={{ 
+        width: '64px', 
+        height: '64px', 
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #71459A 0%, #422462 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '28px',
+        fontSize: '32px',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 4px 12px rgba(113, 69, 154, 0.3)'
+      }}>
+        🔗
+      </div>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        fontWeight: '700', 
+        marginBottom: '16px',
+        color: '#422462',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        REST API & Webhooks
+      </h3>
+      <p style={{ 
+        color: '#64748b', 
+        lineHeight: '1.7',
+        marginBottom: '24px',
+        fontSize: '1rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Powerful REST API for seamless integration. Real-time webhook notifications for order lifecycle events. Secure authentication and comprehensive monitoring.
+      </p>
+      <a 
+        href="/api-reference/quickstart" 
+        style={{
+          color: '#71459A',
+          textDecoration: 'none',
+          fontWeight: '600',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.95rem',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        Explore API →
+      </a>
+    </div>
+
+    <div style={{
+      padding: '40px',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(135deg, rgba(113, 69, 154, 0.1) 0%, rgba(66, 36, 98, 0.1) 100%)',
+        borderRadius: '0 20px 0 100px'
+      }}></div>
+      <div style={{ 
+        width: '64px', 
+        height: '64px', 
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #71459A 0%, #422462 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '28px',
+        fontSize: '32px',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 4px 12px rgba(113, 69, 154, 0.3)'
+      }}>
+        📍
+      </div>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        fontWeight: '700', 
+        marginBottom: '16px',
+        color: '#422462',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Smart Address Processing
+      </h3>
+      <p style={{ 
+        color: '#64748b', 
+        lineHeight: '1.7',
+        marginBottom: '24px',
+        fontSize: '1rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        AI-powered address detection using OpenAI LLM to automatically identify districts and cities, improving delivery accuracy and route optimization.
+      </p>
+      <a 
+        href="/models/areas" 
+        style={{
+          color: '#71459A',
+          textDecoration: 'none',
+          fontWeight: '600',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.95rem',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        Learn more →
+      </a>
+    </div>
+
+    <div style={{
+      padding: '40px',
+      borderRadius: '20px',
+      border: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '100px',
+        height: '100px',
+        background: 'linear-gradient(135deg, rgba(113, 69, 154, 0.1) 0%, rgba(66, 36, 98, 0.1) 100%)',
+        borderRadius: '0 20px 0 100px'
+      }}></div>
+      <div style={{ 
+        width: '64px', 
+        height: '64px', 
+        borderRadius: '16px',
+        background: 'linear-gradient(135deg, #71459A 0%, #422462 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '28px',
+        fontSize: '32px',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: '0 4px 12px rgba(113, 69, 154, 0.3)'
+      }}>
+        📊
+      </div>
+      <h3 style={{ 
+        fontSize: '1.5rem', 
+        fontWeight: '700', 
+        marginBottom: '16px',
+        color: '#422462',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Analytics & Reporting
+      </h3>
+      <p style={{ 
+        color: '#64748b', 
+        lineHeight: '1.7',
+        marginBottom: '24px',
+        fontSize: '1rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        Comprehensive dashboards with profit reports, delivery state analytics, payment tracking, and regional distribution insights for data-driven decisions.
+      </p>
+      <a 
+        href="/models/orders" 
+        style={{
+          color: '#71459A',
+          textDecoration: 'none',
+          fontWeight: '600',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '0.95rem',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
+        Learn more →
+      </a>
+    </div>
+  </div>
+
+  <div style={{
+    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+    borderRadius: '24px',
+    padding: '80px 40px',
+    textAlign: 'center',
+    marginBottom: '100px',
+    border: '1px solid #e2e8f0'
+  }}>
+    <h2 style={{ 
+      fontSize: 'clamp(2rem, 4vw, 2.75rem)', 
+      fontWeight: '800', 
+      marginBottom: '20px',
+      color: '#422462',
+      letterSpacing: '-0.02em'
+    }}>
+      Built for Every Role
+    </h2>
+    <p style={{ 
+      fontSize: '1.2rem', 
+      color: '#64748b',
+      marginBottom: '50px',
+      maxWidth: '700px',
+      margin: '0 auto 50px',
+      lineHeight: '1.7'
+    }}>
+      Parcel Tracer provides tailored experiences for delivery companies, merchants, drivers, and end customers.
+    </p>
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+      gap: '28px',
+      maxWidth: '1000px',
+      margin: '0 auto'
+    }}>
+      <div style={{
+        padding: '32px 24px',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{ fontSize: '40px', marginBottom: '16px' }}>🏢</div>
+        <h4 style={{ fontWeight: '700', marginBottom: '12px', color: '#1a1a1a', fontSize: '1.1rem' }}>Delivery Companies</h4>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: '1.6' }}>Complete control over operations, orders, and team management</p>
+      </div>
+      <div style={{
+        padding: '32px 24px',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{ fontSize: '40px', marginBottom: '16px' }}>🏪</div>
+        <h4 style={{ fontWeight: '700', marginBottom: '12px', color: '#1a1a1a', fontSize: '1.1rem' }}>Merchants</h4>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: '1.6' }}>Create orders, track deliveries, and manage invoices</p>
+      </div>
+      <div style={{
+        padding: '32px 24px',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{ fontSize: '40px', marginBottom: '16px' }}>🚗</div>
+        <h4 style={{ fontWeight: '700', marginBottom: '12px', color: '#1a1a1a', fontSize: '1.1rem' }}>Drivers</h4>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: '1.6' }}>Mobile app for managing deliveries and confirming orders</p>
+      </div>
+      <div style={{
+        padding: '32px 24px',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{ fontSize: '40px', marginBottom: '16px' }}>👤</div>
+        <h4 style={{ fontWeight: '700', marginBottom: '12px', color: '#1a1a1a', fontSize: '1.1rem' }}>End Customers</h4>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: '1.6' }}>Real-time order tracking and delivery status updates</p>
+      </div>
+    </div>
+  </div>
+
+  <div style={{
+    backgroundImage: 'radial-gradient(ellipse 600px 400px at 20% 30%, rgba(113, 69, 154, 0.3) 0%, transparent 50%), radial-gradient(ellipse 600px 400px at 80% 70%, rgba(66, 36, 98, 0.4) 0%, transparent 50%), linear-gradient(135deg, #71459A 0%, #5a3578 20%, #4d2a66 40%, #422462 60%, #422462 100%)',
+    borderRadius: '24px',
+    padding: '80px 40px',
+    textAlign: 'center',
+    color: 'white',
+    marginBottom: '100px',
+    position: 'relative',
+    overflow: 'hidden'
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.1) 0%, transparent 50%)',
+      pointerEvents: 'none'
+    }}></div>
+    <div style={{ position: 'relative', zIndex: 1 }}>
+      <h2 style={{ 
+        fontSize: 'clamp(2rem, 4vw, 3rem)', 
+        fontWeight: '800', 
+        marginBottom: '24px',
+        color: 'white',
+        letterSpacing: '-0.02em'
+      }}>
+        Ready to Get Started?
+      </h2>
+      <p style={{ 
+        fontSize: '1.2rem', 
+        marginBottom: '48px',
+        opacity: '0.95',
+        maxWidth: '600px',
+        margin: '0 auto 48px',
+        color: 'white',
+        lineHeight: '1.7'
+      }}>
+        Start managing your logistics operations with Parcel Tracer today. Explore our API, set up webhooks, or dive into our comprehensive documentation.
+      </p>
+      <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <a 
+          href="https://prod.parceltracer.app" 
+          style={{
+            backgroundColor: 'white',
+            color: '#71459A',
+            padding: '18px 40px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            fontWeight: '700',
+            fontSize: '1.1rem',
+            display: 'inline-block',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+          }}
+        >
+          Open App
+        </a>
+        <a 
+          href="/api-reference/quickstart" 
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            color: 'white',
+            padding: '18px 40px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            fontWeight: '700',
+            fontSize: '1.1rem',
+            border: '2px solid rgba(255,255,255,0.3)',
+            display: 'inline-block',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          API Documentation
+        </a>
+        <a 
+          href="/webhooks/getting-started" 
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            color: 'white',
+            padding: '18px 40px',
+            borderRadius: '12px',
+            textDecoration: 'none',
+            fontWeight: '700',
+            fontSize: '1.1rem',
+            border: '2px solid rgba(255,255,255,0.3)',
+            display: 'inline-block',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          Webhooks Guide
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>

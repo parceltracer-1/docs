@@ -3,13 +3,19 @@
   "theme": "mint",
   "name": "Parcel Tracer",
   "colors": {
-    "primary": "#9B5DE5",
-    "light": "#7038B2",
-    "dark": "#7038B2"
+    "primary": "#71459A",
+    "light": "#71459A",
+    "dark": "#2d1b3d"
   },
   "favicon": "/favicon.png",
   "navigation": {
     "tabs": [
+      {
+        "tab": "Home",
+        "pages": [
+          "index"
+        ]
+      },
       {
         "tab": "API Reference",
         "groups": [
@@ -57,6 +63,7 @@
     "dark": "/logo/main-logo.png"
   },
   "navbar": {
+    "style": "default",
     "links": [
       {
         "label": "Contact Us",

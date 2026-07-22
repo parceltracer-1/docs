@@ -26,7 +26,14 @@ An alternative phone number for the customer, also including the country code.
 
 The customer's email address.
 
+### `locations`: `array<object<CustomerLocation>>`
+- **Attributes:** Read-only, conditional
+
+The customer's [locations](/models/customer-locations). This field is only included when the request is made with the `?include_locations=true` query parameter (on the customer list and retrieve endpoints); it is omitted otherwise.
+
 ## Example
+
+Default response:
 
 ```json
 {
@@ -36,3 +43,36 @@ The customer's email address.
   "secondary_phone_number": "+15557654321",
   "email": "jane.doe@example.com"
 }
+```
+
+With `?include_locations=true`:
+
+```json
+{
+  "id": 12345,
+  "name": "Jane Doe",
+  "phone_number": "+15551234567",
+  "secondary_phone_number": null,
+  "email": "jane.doe@example.com",
+  "locations": [
+    {
+      "id": 9691,
+      "area": {
+        "id": 146,
+        "name_ar": "عيناب",
+        "name_en": "Ainab",
+        "district": "Aley",
+        "lat": "33.766414000000000",
+        "long": "35.546311000000000",
+        "maps_link": "http://maps.google.com/maps?q=33.766414,35.546311",
+        "code": "LBN0146",
+        "is_external": false,
+        "area_group": null
+      },
+      "directions": "Near the pharmacy"
+    }
+  ]
+}
+```
+
+<Note>The list endpoint (`GET /customers/`) returns results wrapped in a pagination envelope: `{ "count", "next", "previous", "results": [ ... ] }`.</Note>

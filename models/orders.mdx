@@ -30,6 +30,11 @@ description: The Order entity represents a delivery transaction between a mercha
 
   A publicly accessible link that can be used to track the delivery journey of the order.
 
+### `order_url`: `string`
+- **Attributes:** Read-only
+
+  Link to the order in the merchant's Parcel Tracer dashboard.
+
 ### `is_critical`: `boolean`
 
   If set to true, enforces rapid delivery operation (subject to delivery company load and availability).
@@ -129,5 +134,100 @@ description: The Order entity represents a delivery transaction between a mercha
   - `PENDING_PAYMENT_TO_MERCHANT`: The amount has been prepared for payment to the shop (excluding delivery fees)
   - `PAID_TO_MERCHANT`: The amount has been fully paid to the shop (excluding delivery fees)
 
-### `merchant_invoice`: `integer`
-  Identifier of the payment invoice.
+### `merchant_invoice`: `integer | null`
+- **Attributes:** Read-only
+
+  Identifier of the [merchant invoice](/models/invoices) this order was billed on, or `null` if the order has not been invoiced yet.
+
+### `integration_items`: `array<object>`
+
+  Structured line items from an integrated platform (e.g. Shopify or WooCommerce). Each item has the shape:
+
+  - `name`: `string` — line item name, e.g. `"T-Shirt (Size: M)"` (required)
+  - `quantity`: `integer` — quantity ordered
+  - `price`: `string` — unit price, e.g. `"19.99"`
+  - `currency`: `string` — ISO currency code, e.g. `"USD"`
+  - `image_url`: `string` — image of the item on the source platform
+  - `source_url`: `string` — link to the item on the source platform
+
+  <Note>When `integration_items` is provided on order creation and no `description` is given, the order `description` is auto-built from the items, e.g. `"2x T-Shirt (Size: M)"`. This field can only be changed before the order is picked up.</Note>
+
+### `source_url`: `string`
+
+  Link back to the order on the originating platform (for orders created through an integration).
+
+### `statestamps`: `array<object>`
+- **Attributes:** Read-only
+
+  Chronological history of the order's delivery and payment states. Each entry has:
+
+  - `delivery_state`: `string` — the `delivery_state` (see below) recorded at that time
+  - `payment_state`: `string` — the `payment_state` (see below) recorded at that time
+  - `timestamp`: `string` — ISO 8601 datetime when the order entered this state
+
+## Example
+
+```json
+{
+  "order_id": "179",
+  "reference_id": "123",
+  "is_exchange": false,
+  "workflow": "STANDARD",
+  "tracking_link": "https://prod.parceltracer.app/tracking/9kQz2Lp4x",
+  "order_url": "https://acme.parceltracer.app/order/79",
+  "is_critical": true,
+  "merchant_location": 1,
+  "cod": [["LBP", "2000000.00"], ["USD", "50.50"]],
+  "delivery_fee": [["USD", "3.00"]],
+  "number_of_packages": 1,
+  "description": "2x T-Shirt (Size: M)",
+  "notes": "",
+  "return_reason": "",
+  "delivery_state": "CREATED",
+  "payment_state": "UNPAID",
+  "merchant_invoice": null,
+  "integration_items": [
+    {
+      "name": "T-Shirt (Size: M)",
+      "quantity": 2,
+      "price": "19.99",
+      "currency": "USD",
+      "image_url": "https://shop.example.com/img/tshirt.png",
+      "source_url": "https://shop.example.com/products/tshirt"
+    }
+  ],
+  "source_url": "https://shop.example.com/orders/1042",
+  "statestamps": [
+    {
+      "delivery_state": "CREATED",
+      "payment_state": "UNPAID",
+      "timestamp": "2026-07-22T23:02:34.268588+03:00"
+    }
+  ],
+  "customer": {
+    "id": 9707,
+    "name": "Joelle",
+    "phone_number": "+96131234567",
+    "secondary_phone_number": null,
+    "email": ""
+  },
+  "customer_location": {
+    "id": 9689,
+    "area": {
+      "id": 55,
+      "name_ar": "بلدي",
+      "name_en": "Balde",
+      "district": "Akkar",
+      "lat": "34.560760000000000",
+      "long": "36.144910000000000",
+      "maps_link": "http://maps.google.com/maps?q=34.56076,36.14491",
+      "code": "LBN0055",
+      "is_external": false,
+      "area_group": null
+    },
+    "directions": ""
+  }
+}
+```
+
+<Note>List endpoints (`GET /orders/`) return results wrapped in a pagination envelope: `{ "count", "next", "previous", "results": [ ... ] }`.</Note>

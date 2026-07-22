@@ -6,9 +6,15 @@ description: Area represents a specific destination region, currently scoped to 
 
 ## Fields
 
-### `id`: `string`
-**Attributes:** Unique  
+### `id`: `integer`
+**Attributes:** Unique
 A unique identifier assigned to each area.
+
+### `name_ar`: `string`
+Area's name in Arabic.
+
+### `name_en`: `string`
+Area's name in English.
 
 ### `district`: `enum`
 
@@ -16,8 +22,67 @@ Region of the customer's location (currently refers to Lebanese districts strict
 
 Possible values: `Zahleh`, `Hasbaya`, `Baalbek`, `Jezzine`, `Baabda`, `Jbeil`, `Zgharta`, `Bint Jbeil`, `Hermel`, `Marjeyoun`, `Bsharri`, `Aley`, `Rashaya`, `Miniyeh-Danniyeh`, `Tripoli`, `Tyre`, `Nabatieh`, `Chouf`, `Maatn`, `Western Beqaa`, `Akkar`, `Sidon`, `Batroun`, `Keserwan`, `Koura`, `Beirut`
 
-### `name_ar`: `string`
-Area's name in arabic.
+### `code`: `string`
+**Attributes:** Read-only
+A stable, human-readable area code (e.g. `LBN0146`).
 
-### `name_en`: `string`
-Area's name in english.
+### `lat`: `string | null`
+Latitude of the area centre, as a decimal string.
+
+### `long`: `string | null`
+Longitude of the area centre, as a decimal string.
+
+### `maps_link`: `string | null`
+A Google Maps link pointing at the area centre.
+
+### `is_external`: `boolean`
+Whether this is an **external** area — an ad-hoc area created from raw coordinates (via [`POST /areas/create/`](/api-reference/areas)) when no internal area matched. Internal areas returned by `GET /areas/` always have `is_external: false`.
+
+### `tags`: `array<object>`
+**Attributes:** Read-only
+Organisation-scoped tags assigned to the area. Usually an empty array.
+
+### `area_group`: `object | null`
+**Attributes:** Read-only
+The group this area belongs to, or `null`. When present it has the shape `{ "id": integer, "name": string }`.
+
+<Note>
+Field availability depends on the endpoint:
+
+- **`GET /areas/`** returns a **lean** area object with only `id`, `name_ar`, `name_en`, `district`, `code`, `lat`, `long`.
+- Areas **embedded inside a customer location** (e.g. on an [Order](/models/orders) or [Customer Location](/models/customer-locations)) include everything above **except** `tags`.
+- **`GET /resolve-address/`** returns the full area object including `tags` and `area_group`.
+</Note>
+
+## Example
+
+Lean object as returned by `GET /areas/`:
+
+```json
+{
+  "id": 146,
+  "name_ar": "عيناب",
+  "name_en": "Ainab",
+  "district": "Aley",
+  "code": "LBN0146",
+  "lat": "33.766414000000000",
+  "long": "35.546311000000000"
+}
+```
+
+Full object (embedded in a location / returned by `GET /resolve-address/`):
+
+```json
+{
+  "id": 146,
+  "name_ar": "عيناب",
+  "name_en": "Ainab",
+  "district": "Aley",
+  "lat": "33.766414000000000",
+  "long": "35.546311000000000",
+  "maps_link": "http://maps.google.com/maps?q=33.766414,35.546311",
+  "code": "LBN0146",
+  "is_external": false,
+  "area_group": null
+}
+```

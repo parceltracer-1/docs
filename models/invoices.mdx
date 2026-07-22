@@ -1,0 +1,107 @@
+---
+title: Invoice
+description: A merchant invoice groups a set of delivered orders with their financial totals, used to reconcile payments between the delivery company and the merchant.
+---
+
+Invoices let a merchant's systems reconcile what is owed. Each invoice bundles a set of orders and exposes the money involved as **currency/amount pairs** (e.g. `[["USD", "20.00"]]`).
+
+The [list endpoint](/api-reference/invoices) returns invoice **metadata** only (for building a grouped overview), while the [retrieve endpoint](/api-reference/invoices) additionally returns the **orders** on the invoice.
+
+## Fields
+
+### `number`: `integer`
+**Attributes:** Unique
+The invoice identifier, shown to merchants as **Invoice #{number}**. Use it to retrieve a single invoice.
+
+### `status`: `enum<string>`
+Current status of the invoice. Values:
+
+- `PENDING_PAYMENT` — Pending Payment
+- `PAYMENT_SCHEDULED` — Payment Scheduled
+- `COLLECTED_BY_DRIVER` — Collected By Driver
+- `IN_PROGRESS` — In Progress
+- `PAID` — Paid
+- `AWAITING_RETURN` — Awaiting Return
+- `FAILED` — Failed
+- `CANCELLED` — Cancelled
+
+### `status_display`: `string`
+- **Attributes:** List endpoint only
+
+Human-readable label for `status` (e.g. `"Pending Payment"`).
+
+### `issued_at`: `string`
+ISO 8601 datetime when the invoice was issued.
+
+### `order_count`: `integer`
+- **Attributes:** List endpoint only
+
+Number of orders on the invoice.
+
+### `cod`: `array`
+**Attributes:** Read-only
+Total cash-on-delivery across the invoice's orders, as currency/amount pairs.
+
+### `delivery_fee`: `array`
+**Attributes:** Read-only
+Total delivery fees across the invoice's orders, as currency/amount pairs.
+
+### `net_due_to_merchant`: `array`
+**Attributes:** Read-only
+Net amount owed to the merchant (COD minus delivery fees), as currency/amount pairs.
+
+### `orders`: `array<object>`
+- **Attributes:** Retrieve endpoint only
+
+The orders billed on this invoice. Each entry is a financial summary:
+
+- `order_id`: `string` — the [Order](/models/orders) identifier
+- `reference_id`: `string` — the merchant's reference for the order
+- `workflow`: `string` — `STANDARD` or `RETURN`
+- `delivery_state`: `string` — the order's [`delivery_state`](/models/orders)
+- `payment_state`: `string` — the order's [`payment_state`](/models/orders)
+- `cod`: `array` — amount to collect from the customer, as currency/amount pairs
+- `delivery_fee`: `array` — the courier's delivery charge, as currency/amount pairs
+
+## Example
+
+List item (`GET /invoices/`):
+
+```json
+{
+  "number": 214,
+  "status": "PAID",
+  "status_display": "Paid",
+  "issued_at": "2026-07-03T09:15:00Z",
+  "order_count": 12,
+  "cod": [["USD", "240.00"]],
+  "delivery_fee": [["USD", "36.00"]],
+  "net_due_to_merchant": [["USD", "204.00"]]
+}
+```
+
+Single invoice with orders (`GET /invoices/{number}/`):
+
+```json
+{
+  "number": 214,
+  "status": "PAID",
+  "issued_at": "2026-07-03T09:15:00Z",
+  "cod": [["USD", "240.00"]],
+  "delivery_fee": [["USD", "36.00"]],
+  "net_due_to_merchant": [["USD", "204.00"]],
+  "orders": [
+    {
+      "order_id": "11",
+      "reference_id": "REF-001",
+      "workflow": "STANDARD",
+      "delivery_state": "DELIVERED",
+      "payment_state": "PAID_TO_MERCHANT",
+      "cod": [["USD", "20.00"]],
+      "delivery_fee": [["USD", "3.00"]]
+    }
+  ]
+}
+```
+
+<Note>The list endpoint (`GET /invoices/`) returns results wrapped in a pagination envelope: `{ "count", "next", "previous", "results": [ ... ] }`. It also accepts `year` and `month` query filters.</Note>

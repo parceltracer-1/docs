@@ -11,7 +11,32 @@ A customer can have several locations. Each location is identified by many detai
 A unique identifier assigned to each location.
 
 ### `area`: `object<Area>`
-[Area](/models/areas) represents a specific destination region, currently scoped to Lebanon only. 
+The [Area](/models/areas) the location belongs to. Embedded areas include every Area field except `tags` (`id`, `name_ar`, `name_en`, `district`, `lat`, `long`, `maps_link`, `code`, `is_external`, `area_group`).
+
+When **creating or updating** a location, provide `area` as `{ "id": <area_id> }` — only the `id` is used to resolve the area.
 
 ### `directions`: `string`
 Extra indications to help the driver find the location more easily.
+
+## Example
+
+```json
+{
+  "id": 9691,
+  "area": {
+    "id": 146,
+    "name_ar": "عيناب",
+    "name_en": "Ainab",
+    "district": "Aley",
+    "lat": "33.766414000000000",
+    "long": "35.546311000000000",
+    "maps_link": "http://maps.google.com/maps?q=33.766414,35.546311",
+    "code": "LBN0146",
+    "is_external": false,
+    "area_group": null
+  },
+  "directions": "Near the pharmacy"
+}
+```
+
+<Note>The list endpoint (`GET /customers/{id}/locations/`) returns results wrapped in a pagination envelope: `{ "count", "next", "previous", "results": [ ... ] }`.</Note>

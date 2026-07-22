@@ -19,7 +19,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Area'
+                  $ref: '#/components/schemas/ExternalArea'
               examples:
                 Areas:
                   value:
@@ -27,15 +27,46 @@ paths:
                       name_ar: عيناب
                       name_en: Ainab
                       district: Aley
+                      code: LBN0146
                       lat: '33.766414000000000'
                       long: '35.546311000000000'
                     - id: 161
                       name_ar: بخشتاي
                       name_en: Bkhechtey
                       district: Aley
+                      code: LBN0161
                       lat: '33.799487000000000'
                       long: '35.615519000000000'
                   summary: A sample list of areas
+          description: ''
+  /areas/create/:
+    post:
+      operationId: create_external_area
+      description: Create an external area from coordinates. Used when no internal
+        area matches.
+      summary: Create External Area
+      tags:
+      - Areas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExternalArea'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateExternalArea'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateExternalArea'
+        required: true
+      security:
+      - MerchantAPIKey: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
           description: ''
   /customers/:
     get:
@@ -86,7 +117,11 @@ paths:
                     next: http://api.example.org/accounts/?page=4
                     previous: http://api.example.org/accounts/?page=2
                     results:
-                    - - id: 1
+                    - count: 2
+                      next: null
+                      previous: null
+                      results:
+                      - id: 1
                         name: John Doe
                         phone_number: '+1234567890'
                         secondary_phone_number: ''
@@ -94,12 +129,16 @@ paths:
                         locations:
                         - id: 10
                           area:
-                            name_en: Aaiyat
+                            id: 12
                             name_ar: عيات
-                            lat: 34.53534
-                            long: 36.19682
+                            name_en: Aaiyat
                             district: Akkar
+                            lat: '34.535340000000000'
+                            long: '36.196820000000000'
                             maps_link: http://maps.google.com/maps?q=34.53534,36.19682
+                            code: LBN0012
+                            is_external: false
+                            area_group: null
                           directions: ''
                       - id: 2
                         name: Jane Smith
@@ -107,7 +146,7 @@ paths:
                         secondary_phone_number: ''
                         email: jane@example.com
                         locations: []
-                  summary: A sample list of customers
+                  summary: A page of customers (with ?include_locations=true)
           description: ''
     post:
       operationId: create_customer
@@ -205,13 +244,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedExternalLocationList'
               examples:
-                CustomerListExample:
+                CustomerLocationsExample:
                   value:
                     count: 123
                     next: http://api.example.org/accounts/?page=4
                     previous: http://api.example.org/accounts/?page=2
                     results:
-                    - - id: 9688
+                    - count: 2
+                      next: null
+                      previous: null
+                      results:
+                      - id: 9688
                         area:
                           id: 146
                           name_ar: عيناب
@@ -219,6 +262,10 @@ paths:
                           district: Aley
                           lat: '33.766414000000000'
                           long: '35.546311000000000'
+                          maps_link: http://maps.google.com/maps?q=33.766414,35.546311
+                          code: LBN0146
+                          is_external: false
+                          area_group: null
                         directions: ''
                       - id: 9689
                         area:
@@ -228,8 +275,12 @@ paths:
                           district: Aley
                           lat: '33.799487000000000'
                           long: '35.615519000000000'
-                        directions: ''
-                  summary: A sample list of customers
+                          maps_link: http://maps.google.com/maps?q=33.799487,35.615519
+                          code: LBN0161
+                          is_external: false
+                          area_group: null
+                        directions: Near the pharmacy
+                  summary: A page of customer locations
           description: ''
     post:
       operationId: create_customer_location
@@ -274,6 +325,10 @@ paths:
                       district: Aley
                       lat: '33.766414000000000'
                       long: '35.546311000000000'
+                      maps_link: http://maps.google.com/maps?q=33.766414,35.546311
+                      code: LBN0146
+                      is_external: false
+                      area_group: null
                     directions: ''
                   summary: Example of resource created successfully
           description: ''
@@ -340,6 +395,10 @@ paths:
                       district: Aley
                       lat: '33.766414000000000'
                       long: '35.546311000000000'
+                      maps_link: http://maps.google.com/maps?q=33.766414,35.546311
+                      code: LBN0146
+                      is_external: false
+                      area_group: null
                     directions: ''
                   summary: Example of resource retrieved successfully
           description: Successful retrieval
@@ -404,6 +463,10 @@ paths:
                       district: Aley
                       lat: '33.766414000000000'
                       long: '35.546311000000000'
+                      maps_link: http://maps.google.com/maps?q=33.766414,35.546311
+                      code: LBN0146
+                      is_external: false
+                      area_group: null
                     directions: ''
                   summary: Example of resource created successfully
           description: Successful update
@@ -576,6 +639,116 @@ paths:
                     details: Internal server error
                   summary: Example of internal server error response
           description: Server error
+  /invoices/:
+    get:
+      operationId: list_invoices
+      description: |-
+        Retrieve a paginated list of the merchant's invoices, newest first, each with a financial summary (COD, delivery fee, net due to merchant), its status, and the number of orders on it. This returns invoice metadata only, for building a grouped overview; use the retrieve endpoint to get the orders on a specific invoice.
+
+        Use the `year` and `month` filters to fetch the invoices issued in a single period.
+      summary: List merchant invoices
+      parameters:
+      - in: query
+        name: month
+        schema:
+          type: integer
+        description: Return only invoices issued in this month (1-12). Combine with
+          `year`.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: year
+        schema:
+          type: integer
+        description: Return only invoices issued in this year, e.g. 2026.
+      tags:
+      - Invoices
+      security:
+      - MerchantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExternalInvoiceListItemList'
+              examples:
+                InvoiceListing:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - - number: 214
+                        status: PAID
+                        status_display: Paid
+                        issued_at: '2026-07-03T09:15:00Z'
+                        order_count: 12
+                        cod:
+                        - - USD
+                          - '240.00'
+                        delivery_fee:
+                        - - USD
+                          - '36.00'
+                        net_due_to_merchant:
+                        - - USD
+                          - '204.00'
+                      - number: 213
+                        status: PENDING_PAYMENT
+                        status_display: Pending Payment
+                        issued_at: '2026-06-28T14:02:00Z'
+                        order_count: 5
+                        cod:
+                        - - USD
+                          - '95.00'
+                        delivery_fee:
+                        - - USD
+                          - '15.00'
+                        net_due_to_merchant:
+                        - - USD
+                          - '80.00'
+                  summary: A page of invoice metadata, newest first.
+          description: A page of invoice metadata.
+  /invoices/{invoice_number}/:
+    get:
+      operationId: retrieve_invoice
+      description: 'Retrieve a merchant invoice by its number, with its orders and
+        their financial state (COD to collect from the customer, delivery fee, delivery
+        state, payment state) for reconciliation. The number is the invoice id shown
+        to merchants as "Invoice #{id}".'
+      summary: Retrieve a merchant invoice
+      parameters:
+      - in: path
+        name: invoice_number
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Invoices
+      security:
+      - MerchantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalInvoice'
+          description: The invoice and its orders.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Invoice not found.
   /orders/:
     get:
       operationId: list_orders
@@ -611,23 +784,37 @@ paths:
                     next: http://api.example.org/accounts/?page=4
                     previous: http://api.example.org/accounts/?page=2
                     results:
-                    - - order_id: '11'
+                    - count: 2
+                      next: null
+                      previous: null
+                      results:
+                      - order_id: '11'
                         reference_id: ''
-                        is_exchange: 'false'
+                        is_exchange: false
                         workflow: STANDARD
-                        tracking_link: https://prod.parceltracer.app/tracking/xxxxx-yyyyyyy
-                        is_critical: 'false'
+                        tracking_link: https://prod.parceltracer.app/tracking/RYp8OAHu8
+                        order_url: https://acme.parceltracer.app/order/1
+                        is_critical: false
                         merchant_location: 1
                         cod:
                         - - USD
                           - '20.00'
+                        delivery_fee:
+                        - - USD
+                          - '3.00'
                         number_of_packages: 1
                         description: ''
                         notes: ''
                         return_reason: ''
                         delivery_state: CREATED
                         payment_state: UNPAID
-                        merchant_invoice: 'null'
+                        merchant_invoice: null
+                        integration_items: []
+                        source_url: ''
+                        statestamps:
+                        - delivery_state: CREATED
+                          payment_state: UNPAID
+                          timestamp: '2026-07-22T23:02:34.268588+03:00'
                         customer:
                           id: 6635
                           name: Joe
@@ -638,48 +825,64 @@ paths:
                           id: 6635
                           area:
                             id: 1
-                            name_en: Aaiyat
                             name_ar: عيات
-                            lat: 34.53534
-                            long: 36.19682
+                            name_en: Aaiyat
                             district: Akkar
+                            lat: '34.535340000000000'
+                            long: '36.196820000000000'
                             maps_link: http://maps.google.com/maps?q=34.53534,36.19682
+                            code: LBN0001
+                            is_external: false
+                            area_group: null
                           directions: ''
                       - order_id: '17'
                         reference_id: ''
-                        is_exchange: 'false'
+                        is_exchange: false
                         workflow: STANDARD
-                        tracking_link: https://prod.parceltracer.app/tracking/xxxxx-yyyyyyy
-                        is_critical: 'false'
+                        tracking_link: https://prod.parceltracer.app/tracking/1BM0Kv0k87
+                        order_url: https://acme.parceltracer.app/order/7
+                        is_critical: false
                         merchant_location: 1
                         cod:
                         - - USD
                           - '20.00'
+                        delivery_fee:
+                        - - USD
+                          - '3.00'
                         number_of_packages: 1
                         description: ''
                         notes: ''
                         return_reason: ''
                         delivery_state: CREATED
                         payment_state: UNPAID
-                        merchant_invoice: 'null'
+                        merchant_invoice: null
+                        integration_items: []
+                        source_url: ''
+                        statestamps:
+                        - delivery_state: CREATED
+                          payment_state: UNPAID
+                          timestamp: '2026-07-22T23:04:10.112233+03:00'
                         customer:
-                          id: 6635
+                          id: 6636
                           name: Sara
                           phone_number: '+9613853335'
                           secondary_phone_number: ''
                           email: ''
                         customer_location:
-                          id: 6635
+                          id: 6640
                           area:
-                            id: 2
-                            name_en: El Hamra
-                            name_ar: حمرا
-                            lat: 33.89631
-                            long: 35.48196
-                            district: Beirut
-                            maps_link: http://maps.google.com/maps?q=33.89631,35.48196
+                            id: 55
+                            name_ar: بلدي
+                            name_en: Balde
+                            district: Akkar
+                            lat: '34.560760000000000'
+                            long: '36.144910000000000'
+                            maps_link: http://maps.google.com/maps?q=34.56076,36.14491
+                            code: LBN0055
+                            is_external: false
+                            area_group: null
                           directions: ''
-                  summary: Order listing.
+                  summary: A page of orders.
           description: ''
     post:
       operationId: create_order
@@ -712,29 +915,45 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExternalOrder'
+                $ref: '#/components/schemas/OrdersListDocs'
               examples:
                 SuccessfulOrderCreation:
                   value:
                     order_id: '179'
                     reference_id: '123'
-                    is_exchange: 'false'
+                    is_exchange: false
                     workflow: STANDARD
-                    tracking_link: https://prod.parceltracer.app/tracking/xxxxxxx-yyyyyy
-                    is_critical: 'true'
+                    tracking_link: https://prod.parceltracer.app/tracking/9kQz2Lp4x
+                    order_url: https://acme.parceltracer.app/order/79
+                    is_critical: true
                     merchant_location: 1
                     cod:
                     - - LBP
-                      - '2000.00'
+                      - '2000000.00'
                     - - USD
                       - '50.50'
+                    delivery_fee:
+                    - - USD
+                      - '3.00'
                     number_of_packages: 1
-                    description: ''
+                    description: '2x T-Shirt (Size: M)'
                     notes: ''
                     return_reason: ''
                     delivery_state: CREATED
                     payment_state: UNPAID
                     merchant_invoice: null
+                    integration_items:
+                    - name: 'T-Shirt (Size: M)'
+                      quantity: 2
+                      price: '19.99'
+                      currency: USD
+                      image_url: https://shop.example.com/img/tshirt.png
+                      source_url: https://shop.example.com/products/tshirt
+                    source_url: https://shop.example.com/orders/1042
+                    statestamps:
+                    - delivery_state: CREATED
+                      payment_state: UNPAID
+                      timestamp: '2026-07-22T23:02:34.268588+03:00'
                     customer:
                       id: 9707
                       name: Joelle
@@ -745,12 +964,15 @@ paths:
                       id: 9689
                       area:
                         id: 55
-                        name_en: Balde
                         name_ar: بلدي
-                        lat: 34.56076
-                        long: 36.14491
+                        name_en: Balde
                         district: Akkar
+                        lat: '34.560760000000000'
+                        long: '36.144910000000000'
                         maps_link: http://maps.google.com/maps?q=34.56076,36.14491
+                        code: LBN0055
+                        is_external: false
+                        area_group: null
                       directions: ''
                   summary: Successful order creation
           description: Successful creation
@@ -806,23 +1028,39 @@ paths:
                   value:
                     order_id: '179'
                     reference_id: '123'
-                    is_exchange: 'false'
+                    is_exchange: false
                     workflow: STANDARD
-                    tracking_link: https://prod.parceltracer.app/tracking/xxxxxxx-yyyyyy
-                    is_critical: 'true'
+                    tracking_link: https://prod.parceltracer.app/tracking/9kQz2Lp4x
+                    order_url: https://acme.parceltracer.app/order/79
+                    is_critical: true
                     merchant_location: 1
                     cod:
                     - - LBP
-                      - '2000.00'
+                      - '2000000.00'
                     - - USD
                       - '50.50'
+                    delivery_fee:
+                    - - USD
+                      - '3.00'
                     number_of_packages: 1
-                    description: ''
+                    description: '2x T-Shirt (Size: M)'
                     notes: ''
                     return_reason: ''
                     delivery_state: CREATED
                     payment_state: UNPAID
                     merchant_invoice: null
+                    integration_items:
+                    - name: 'T-Shirt (Size: M)'
+                      quantity: 2
+                      price: '19.99'
+                      currency: USD
+                      image_url: https://shop.example.com/img/tshirt.png
+                      source_url: https://shop.example.com/products/tshirt
+                    source_url: https://shop.example.com/orders/1042
+                    statestamps:
+                    - delivery_state: CREATED
+                      payment_state: UNPAID
+                      timestamp: '2026-07-22T23:02:34.268588+03:00'
                     customer:
                       id: 9707
                       name: Joelle
@@ -833,12 +1071,15 @@ paths:
                       id: 9689
                       area:
                         id: 55
-                        name_en: Balde
                         name_ar: بلدي
-                        lat: 34.56076
-                        long: 36.14491
+                        name_en: Balde
                         district: Akkar
+                        lat: '34.560760000000000'
+                        long: '36.144910000000000'
                         maps_link: http://maps.google.com/maps?q=34.56076,36.14491
+                        code: LBN0055
+                        is_external: false
+                        area_group: null
                       directions: ''
                   summary: Successful order creation
           description: Successful retrieval
@@ -899,29 +1140,45 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExternalOrder'
+                $ref: '#/components/schemas/OrdersListDocs'
               examples:
                 SuccessfulOrderCreation:
                   value:
                     order_id: '179'
                     reference_id: '123'
-                    is_exchange: 'false'
+                    is_exchange: false
                     workflow: STANDARD
-                    tracking_link: https://prod.parceltracer.app/tracking/xxxxxxx-yyyyyy
-                    is_critical: 'true'
+                    tracking_link: https://prod.parceltracer.app/tracking/9kQz2Lp4x
+                    order_url: https://acme.parceltracer.app/order/79
+                    is_critical: true
                     merchant_location: 1
                     cod:
                     - - LBP
-                      - '2000.00'
+                      - '2000000.00'
                     - - USD
                       - '50.50'
+                    delivery_fee:
+                    - - USD
+                      - '3.00'
                     number_of_packages: 1
-                    description: ''
+                    description: '2x T-Shirt (Size: M)'
                     notes: ''
                     return_reason: ''
                     delivery_state: CREATED
                     payment_state: UNPAID
                     merchant_invoice: null
+                    integration_items:
+                    - name: 'T-Shirt (Size: M)'
+                      quantity: 2
+                      price: '19.99'
+                      currency: USD
+                      image_url: https://shop.example.com/img/tshirt.png
+                      source_url: https://shop.example.com/products/tshirt
+                    source_url: https://shop.example.com/orders/1042
+                    statestamps:
+                    - delivery_state: CREATED
+                      payment_state: UNPAID
+                      timestamp: '2026-07-22T23:02:34.268588+03:00'
                     customer:
                       id: 9707
                       name: Joelle
@@ -932,12 +1189,15 @@ paths:
                       id: 9689
                       area:
                         id: 55
-                        name_en: Balde
                         name_ar: بلدي
-                        lat: 34.56076
-                        long: 36.14491
+                        name_en: Balde
                         district: Akkar
+                        lat: '34.560760000000000'
+                        long: '36.144910000000000'
                         maps_link: http://maps.google.com/maps?q=34.56076,36.14491
+                        code: LBN0055
+                        is_external: false
+                        area_group: null
                       directions: ''
                   summary: Successful order creation
           description: Successful patch
@@ -1025,6 +1285,44 @@ paths:
                     details: 'detail: Not found.'
                   summary: Example of resource not found error
           description: Order not found
+  /orders/{order_id}/request-pickup/:
+    post:
+      operationId: request_pickup
+      description: Request pickup for an order identified by `order_id`. The order
+        must be in `CREATED` state.
+      summary: Request pickup for an order
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - MerchantAPIKey: []
+      responses:
+        '201':
+          description: Pickup requested successfully
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                NotFoundError:
+                  value:
+                    error: 'true'
+                    message: Resource not found.
+                    details: 'detail: Not found.'
+                  summary: Example of resource not found error
+          description: Order not found
   /pickups/:
     get:
       operationId: list_pickups
@@ -1043,12 +1341,17 @@ paths:
                 items:
                   $ref: '#/components/schemas/ShopLocationSerializerForMerchant'
               examples:
-                Areas:
+                PickupLocations:
                   value:
                   - - id: 63
                       name: Main Pickup
+                      address: Zouk Mosbeh - ذوق مصبح
                       contact_person: Jack
                       contact_phone: +961 3 121 323
+                      merchant: 1
+                      district: Keserwan
+                      governorate: Mount Lebanon
+                      city: Zouk Mosbeh
                       directions: 5th floor
                       is_default: true
                       area:
@@ -1060,7 +1363,39 @@ paths:
                         long: '35.619109999999999'
                         maps_link: http://maps.google.com/maps?q=33.955739999999999,35.619109999999999
                         code: LBN2075
+                        is_external: false
+                        area_group: null
+                      mode: SCHEDULE
+                      opening_hours: null
+                      utc_offset: 0
+                      is_open: true
+                      is_active: true
                   summary: A sample list of pickup locations
+          description: ''
+  /profile/:
+    get:
+      operationId: get_profile
+      description: Returns the organisation's branding info for the authenticated
+        merchant.
+      summary: Get Organisation Profile
+      tags:
+      - Profile
+      security:
+      - MerchantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              examples:
+                Profile:
+                  value:
+                    organisation_name: Fast Delivery
+                    brand: fast del
+                    logo_url: https://prod.parceltracer.app/static/logos/fastdel.png
+                    primary_color: '#FF6B00'
+                  summary: Organisation profile for the authenticated merchant
           description: ''
   /resolve-address/:
     get:
@@ -1093,29 +1428,75 @@ paths:
                     district: Aley
                     lat: '33.766414000000000'
                     long: '35.546311000000000'
+                    maps_link: http://maps.google.com/maps?q=33.766414,35.546311
+                    code: LBN0146
+                    is_external: false
+                    tags: []
+                    area_group: null
                   summary: A sample area response
+          description: ''
+  /resolve-coordinates/:
+    post:
+      operationId: resolve_coordinates
+      description: Accepts lat/lng coordinates and returns the nearest internal area
+        if within 2km, otherwise null.
+      summary: Resolve Coordinates to Area
+      tags:
+      - Areas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveCoordinatesRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveCoordinatesRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveCoordinatesRequest'
+        required: true
+      security:
+      - MerchantAPIKey: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveCoordinatesResponse'
+              examples:
+                ResolvedArea:
+                  value:
+                    resolved_area:
+                      id: 55
+                      name_en: Balde
+                      district: Akkar
+                      distance_km: 1.3
+                      lat: 34.56076
+                      lng: 36.14491
+                      delivery_fee_delta: null
+                  summary: Nearest area within 2km
+                NoMatch:
+                  value:
+                    resolved_area: null
+                  summary: No area within 2km
           description: ''
 components:
   schemas:
     Area:
       type: object
-      description: |-
-        A ModelSerializer that takes an additional `fields` argument that
-        controls which fields should be displayed.
       properties:
         id:
           type: integer
           readOnly: true
         name_ar:
           type: string
-          default: ''
           maxLength: 200
         name_en:
           type: string
-          default: ''
           maxLength: 200
         district:
-          $ref: '#/components/schemas/DistrictEnum'
+          type: string
+          maxLength: 50
         lat:
           type: string
           format: decimal
@@ -1133,9 +1514,48 @@ components:
         code:
           type: string
           readOnly: true
+        is_external:
+          type: boolean
+        tags:
+          type: string
+          readOnly: true
+        area_group:
+          allOf:
+          - $ref: '#/components/schemas/AreaGroupReference'
+          readOnly: true
+          nullable: true
       required:
+      - area_group
       - code
       - id
+      - tags
+    AreaGroupReference:
+      type: object
+      description: Minimal serializer for area_group reference in Area.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+      - id
+      - name
+    CreateExternalArea:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        name:
+          type: string
+          maxLength: 200
+      required:
+      - lat
+      - lng
+      - name
     CreateOrderSerializerDocs:
       type: object
       properties:
@@ -1155,7 +1575,7 @@ components:
             option is only applicable when workflow is STANDARD')
         workflow:
           allOf:
-          - $ref: '#/components/schemas/Workflow969Enum'
+          - $ref: '#/components/schemas/WorkflowEnum'
           default: STANDARD
           description: |-
             Order workflow: STANDARD or RETURN.
@@ -1266,94 +1686,6 @@ components:
         directions:
           type: string
           description: Additional indications to help the carrier reach the customer.
-    DeliveryStateEnum:
-      enum:
-      - CREATED
-      - PICKUP_REQUESTED
-      - PICKUP_ASSIGNED
-      - SCANNED_FOR_PICKUP
-      - PICKED_UP
-      - AT_WAREHOUSE
-      - DELIVERY_ASSIGNED
-      - SCANNED_FOR_DELIVERY
-      - PICKED_UP_FOR_DELIVERY
-      - IN_TRANSIT
-      - DELIVERED
-      - AWAITING_RETURN
-      - CANCELLED
-      - DELIVERED_AT_WAREHOUSE
-      type: string
-      description: |-
-        * `CREATED` - Created
-        * `PICKUP_REQUESTED` - Pickup Requested
-        * `PICKUP_ASSIGNED` - Pickup Assigned
-        * `SCANNED_FOR_PICKUP` - Scanned for Pickup
-        * `PICKED_UP` - Picked Up
-        * `AT_WAREHOUSE` - At Warehouse
-        * `DELIVERY_ASSIGNED` - Delivery Assigned
-        * `SCANNED_FOR_DELIVERY` - Scanned For Delivery
-        * `PICKED_UP_FOR_DELIVERY` - Picked Up For Delivery
-        * `IN_TRANSIT` - In Transit
-        * `DELIVERED` - Delivered
-        * `AWAITING_RETURN` - Awaiting Return
-        * `CANCELLED` - Cancelled
-        * `DELIVERED_AT_WAREHOUSE` - Delivered At Warehouse
-    DistrictEnum:
-      enum:
-      - Zahleh
-      - Hasbaya
-      - Baalbek
-      - Jezzine
-      - Baabda
-      - Jbeil
-      - Zgharta
-      - Bint Jbeil
-      - Hermel
-      - Marjeyoun
-      - Bsharri
-      - Aley
-      - Rashaya
-      - Miniyeh-Danniyeh
-      - Tripoli
-      - Tyre
-      - Nabatieh
-      - Chouf
-      - Maatn
-      - Western Beqaa
-      - Akkar
-      - Sidon
-      - Batroun
-      - Keserwan
-      - Koura
-      - Beirut
-      type: string
-      description: |-
-        * `Zahleh` - Zahleh
-        * `Hasbaya` - Hasbaya
-        * `Baalbek` - Baalbek
-        * `Jezzine` - Jezzine
-        * `Baabda` - Baabda
-        * `Jbeil` - Jbeil
-        * `Zgharta` - Zgharta
-        * `Bint Jbeil` - Bint Jbeil
-        * `Hermel` - Hermel
-        * `Marjeyoun` - Marjeyoun
-        * `Bsharri` - Bsharri
-        * `Aley` - Aley
-        * `Rashaya` - Rashaya
-        * `Miniyeh-Danniyeh` - Miniyeh-Danniyeh
-        * `Tripoli` - Tripoli
-        * `Tyre` - Tyre
-        * `Nabatieh` - Nabatieh
-        * `Chouf` - Chouf
-        * `Maatn` - Maatn
-        * `Western Beqaa` - Western Beqaa
-        * `Akkar` - Akkar
-        * `Sidon` - Sidon
-        * `Batroun` - Batroun
-        * `Keserwan` - Keserwan
-        * `Koura` - Koura
-        * `Beirut` - Beirut
     ErrorResponse:
       type: object
       properties:
@@ -1366,6 +1698,143 @@ components:
       - details
       - error
       - message
+    ExternalArea:
+      type: object
+      description: Lightweight serializer for external API — no tags, no N+1 queries.
+      properties:
+        id:
+          type: integer
+        name_ar:
+          type: string
+        name_en:
+          type: string
+        district:
+          type: string
+        code:
+          type: string
+        lat:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,15})?$
+        long:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,15})?$
+      required:
+      - code
+      - district
+      - id
+      - lat
+      - long
+      - name_ar
+      - name_en
+    ExternalInvoice:
+      type: object
+      description: A merchant invoice and its orders, for reconciliation by the merchant's
+        systems.
+      properties:
+        number:
+          type: integer
+        status:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        cod:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          readOnly: true
+        delivery_fee:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          readOnly: true
+        net_due_to_merchant:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          readOnly: true
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceOrder'
+      required:
+      - cod
+      - delivery_fee
+      - issued_at
+      - net_due_to_merchant
+      - number
+      - orders
+      - status
+    ExternalInvoiceListItem:
+      type: object
+      description: |-
+        Invoice metadata for listing and grouping, without the per-order breakdown.
+
+        order_count is read from an `order_count` annotation on the queryset, and the money
+        totals come from the cached MoneyAmount purposes, so the listing queryset must both
+        annotate the count and prefetch `money_amounts` to avoid a query per invoice.
+      properties:
+        number:
+          type: integer
+        status:
+          type: string
+        status_display:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        order_count:
+          type: integer
+        cod:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          readOnly: true
+        delivery_fee:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          readOnly: true
+        net_due_to_merchant:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+          readOnly: true
+      required:
+      - cod
+      - delivery_fee
+      - issued_at
+      - net_due_to_merchant
+      - number
+      - order_count
+      - status
+      - status_display
     ExternalLocation:
       type: object
       properties:
@@ -1379,56 +1848,44 @@ components:
       required:
       - area
       - id
-    ExternalOrder:
+    IntegrationItemDocs:
       type: object
+      properties:
+        name:
+          type: string
+          description: 'Line item name, e.g. ''T-Shirt (Size: M)''.'
+        quantity:
+          type: integer
+          description: Quantity ordered.
+        price:
+          type: string
+          description: Unit price as a string, e.g. '19.99'.
+        currency:
+          type: string
+          description: ISO currency code, e.g. 'USD'.
+        image_url:
+          type: string
+          description: Image of the item on the source platform.
+        source_url:
+          type: string
+          description: Link to the item on the source platform.
+      required:
+      - name
+    InvoiceOrder:
+      type: object
+      description: 'An invoice line: one order with the financial figures needed to
+        reconcile it.'
       properties:
         order_id:
           type: string
-          readOnly: true
-          nullable: true
         reference_id:
           type: string
-          pattern: ^([A-Za-z0-9]|\.|-)*$
-          maxLength: 40
-        is_exchange:
-          type: boolean
         workflow:
-          $ref: '#/components/schemas/ExternalOrderWorkflowEnum'
-        tracking_link:
           type: string
-          format: uri
-          readOnly: true
-        is_critical:
-          type: boolean
-          title: Critical
-        customer:
-          type: object
-          additionalProperties: {}
-          writeOnly: true
-          description: |-
-            Customer object identifying the customer for the order.
-            - To identify an existing customer, provide the unique 'id' field. Other fields will update the existing record.
-            - Alternatively, if 'id' is not provided, provide the unique 'phone_number' to identify the customer.
-            - If neither 'id' nor existing 'phone_number' is found, a new customer will be created, and all required customer fields must be provided.
-        customer_location:
-          type: object
-          additionalProperties: {}
-          writeOnly: true
-          description: |-
-            Customer location object for order delivery or pickup.
-            - To identify an existing location, provide the unique 'id'. Other fields will update that location.
-            - If 'id' is not provided, a new location will be created and all required fields must be present.
-            - The location must belong to the specified customer, else the request will be rejected.
-        resolved_customer:
-          allOf:
-          - $ref: '#/components/schemas/Customer'
-          readOnly: true
-        resolved_customer_location:
-          allOf:
-          - $ref: '#/components/schemas/ExternalLocation'
-          readOnly: true
-        merchant_location:
-          type: integer
+        delivery_state:
+          type: string
+        payment_state:
+          type: string
         cod:
           type: array
           items:
@@ -1437,8 +1894,7 @@ components:
               type: string
             maxItems: 2
             minItems: 2
-          description: 'Total amount to be collected upon delivery. Example: [[''USD'',
-            ''123.5'']]'
+          description: Amount to collect from the customer on delivery, e.g. [['USD','20.00']].
         delivery_fee:
           type: array
           items:
@@ -1447,58 +1903,32 @@ components:
               type: string
             maxItems: 2
             minItems: 2
-          readOnly: true
-          description: Delivery fees charged on the delivery operation. Irrelevant
-            in case of `RETURN` orders.
-        number_of_packages:
-          type: integer
-          maximum: 99
-          minimum: 1
-        description:
-          type: string
-          maxLength: 300
-        notes:
-          type: string
-        return_reason:
-          type: string
-          maxLength: 300
-        delivery_state:
-          allOf:
-          - $ref: '#/components/schemas/DeliveryStateEnum'
-          readOnly: true
-        payment_state:
-          type: string
-          readOnly: true
-        merchant_invoice:
-          type: integer
-          readOnly: true
-          nullable: true
+          description: The courier's delivery charge.
       required:
-      - customer
-      - customer_location
+      - cod
       - delivery_fee
       - delivery_state
-      - merchant_invoice
-      - merchant_location
       - order_id
       - payment_state
-      - resolved_customer
-      - resolved_customer_location
-      - tracking_link
-    ExternalOrderWorkflowEnum:
+      - reference_id
+      - workflow
+    ModeEnum:
       enum:
-      - STANDARD
-      - RETURN
+      - OPEN
+      - CLOSED
+      - SCHEDULE
       type: string
       description: |-
-        * `STANDARD` - Standard
-        * `RETURN` - Return
+        * `OPEN` - Open
+        * `CLOSED` - Closed
+        * `SCHEDULE` - Schedule
     OrdersListDocs:
       type: object
       properties:
         order_id:
-          type: integer
-          description: Unique order identifier.
+          type: string
+          description: Unique order identifier, auto-generated by Parcel Tracer (e.g.
+            '11').
         reference_id:
           type: string
           description: Reference ID of the order, for internal tracking by the shop.
@@ -1512,7 +1942,7 @@ components:
             option is only applicable when workflow is STANDARD')
         workflow:
           allOf:
-          - $ref: '#/components/schemas/Workflow969Enum'
+          - $ref: '#/components/schemas/WorkflowEnum'
           description: |-
             Order workflow: STANDARD or RETURN.
 
@@ -1576,10 +2006,43 @@ components:
         return_reason:
           type: string
           description: Applicable if the order is a return. Reason for the return.
+        tracking_link:
+          type: string
+          format: uri
+          description: Publicly accessible link to track the order's delivery journey.
+        order_url:
+          type: string
+          format: uri
+          description: Link to the order in the merchant's Parcel Tracer dashboard.
+        delivery_state:
+          type: string
+          description: 'Current delivery state of the order. One of: CREATED, PICKUP_REQUESTED,
+            PICKUP_ASSIGNED, SCANNED_FOR_PICKUP, PICKED_UP, AT_WAREHOUSE, DELIVERY_ASSIGNED,
+            SCANNED_FOR_DELIVERY, PICKED_UP_FOR_DELIVERY, IN_TRANSIT, DELIVERED, AWAITING_RETURN,
+            CANCELLED, DELIVERED_AT_WAREHOUSE.'
+        merchant_invoice:
+          type: integer
+          nullable: true
+          description: Identifier of the merchant invoice this order was billed on,
+            or null if not yet invoiced.
+        integration_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationItemDocs'
+          description: Structured line items from an integrated platform (e.g. Shopify/WooCommerce).
+        source_url:
+          type: string
+          description: Link back to the order on the originating platform.
+        statestamps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatestampDocs'
+          description: Chronological history of the order's delivery and payment states.
       required:
       - cod
       - customer
       - customer_location
+      - delivery_state
       - description
       - is_critical
       - is_exchange
@@ -1587,8 +2050,11 @@ components:
       - notes
       - number_of_packages
       - order_id
+      - order_url
       - payment_state
       - reference_id
+      - statestamps
+      - tracking_link
       - workflow
     PaginatedCustomerList:
       type: object
@@ -1613,6 +2079,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Customer'
+    PaginatedExternalInvoiceListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalInvoiceListItem'
     PaginatedExternalLocationList:
       type: object
       required:
@@ -1734,6 +2223,79 @@ components:
         * `PAID_BY_DRIVER` - PAID_BY_DRIVER
         * `PENDING_PAYMENT_TO_MERCHANT` - PENDING_PAYMENT_TO_MERCHANT
         * `PAID_TO_MERCHANT` - PAID_TO_MERCHANT
+    ProfileResponse:
+      type: object
+      properties:
+        organisation_name:
+          type: string
+        brand:
+          type: string
+          nullable: true
+        logo_url:
+          type: string
+          nullable: true
+        primary_color:
+          type: string
+      required:
+      - brand
+      - logo_url
+      - organisation_name
+      - primary_color
+    ResolveCoordinatesRequest:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+      required:
+      - lat
+      - lng
+    ResolveCoordinatesResponse:
+      type: object
+      properties:
+        resolved_area:
+          allOf:
+          - $ref: '#/components/schemas/ResolvedArea'
+          nullable: true
+      required:
+      - resolved_area
+    ResolvedArea:
+      type: object
+      properties:
+        id:
+          type: integer
+        name_en:
+          type: string
+        district:
+          type: string
+        distance_km:
+          type: number
+          format: double
+          description: Distance in km from the given coordinates to the area centre.
+        lat:
+          type: number
+          format: double
+          description: Latitude of the matched area.
+        lng:
+          type: number
+          format: double
+          description: Longitude of the matched area.
+        delivery_fee_delta:
+          type: string
+          nullable: true
+          description: Extra delivery fee (in USD) applied for this area by the merchant's
+            delivery fee rules, or null if no rule applies.
+      required:
+      - delivery_fee_delta
+      - distance_km
+      - district
+      - id
+      - lat
+      - lng
+      - name_en
     Response:
       type: object
       description: |-
@@ -1748,14 +2310,13 @@ components:
           readOnly: true
         name_ar:
           type: string
-          default: ''
           maxLength: 200
         name_en:
           type: string
-          default: ''
           maxLength: 200
         district:
-          $ref: '#/components/schemas/DistrictEnum'
+          type: string
+          maxLength: 50
         lat:
           type: string
           format: decimal
@@ -1773,26 +2334,52 @@ components:
         code:
           type: string
           readOnly: true
+        is_external:
+          type: boolean
+        tags:
+          type: string
+          readOnly: true
+        area_group:
+          allOf:
+          - $ref: '#/components/schemas/AreaGroupReference'
+          readOnly: true
+          nullable: true
       required:
+      - area_group
       - code
       - id
+      - tags
     ShopLocationSerializerForMerchant:
       type: object
-      description: |-
-        A ModelSerializer that takes an additional `fields` argument that
-        controls which fields should be displayed.
       properties:
         id:
           type: integer
           readOnly: true
         name:
           type: string
-          default: ''
           maxLength: 200
+        address:
+          type: string
+          nullable: true
+          maxLength: 400
         contact_person:
           type: string
           maxLength: 200
         contact_phone:
+          type: string
+          maxLength: 200
+        merchant:
+          type: integer
+          readOnly: true
+        district:
+          type: string
+          nullable: true
+          maxLength: 50
+        governorate:
+          type: string
+          nullable: true
+          maxLength: 50
+        city:
           type: string
           maxLength: 200
         directions:
@@ -1802,9 +2389,41 @@ components:
           type: boolean
         area:
           $ref: '#/components/schemas/Area'
+        mode:
+          $ref: '#/components/schemas/ModeEnum'
+        opening_hours:
+          nullable: true
+        utc_offset:
+          type: integer
+          maximum: 840
+          minimum: -720
+        is_open:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
       required:
       - id
-    Workflow969Enum:
+      - is_open
+      - merchant
+    StatestampDocs:
+      type: object
+      properties:
+        delivery_state:
+          type: string
+          description: Delivery state recorded at this point in time.
+        payment_state:
+          type: string
+          description: Payment state recorded at this point in time.
+        timestamp:
+          type: string
+          format: date-time
+          description: When the order entered this state.
+      required:
+      - delivery_state
+      - payment_state
+      - timestamp
+    WorkflowEnum:
       enum:
       - STANDARD
       - RETURN

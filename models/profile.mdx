@@ -1,0 +1,31 @@
+---
+title: Profile
+description: The organisation branding profile for the merchant authenticated by the API key.
+---
+
+The profile exposes the branding of the delivery organisation your API key belongs to. It is returned by the [`GET /profile/`](/api-reference/profile) endpoint and is useful for rendering organisation-branded tracking pages or emails in your own systems.
+
+## Fields
+
+### `organisation_name`: `string`
+The organisation's display name.
+
+### `brand`: `string | null`
+The organisation's brand name, or `null` if not set.
+
+### `logo_url`: `string | null`
+URL of the organisation's logo, or `null` if the organisation has no logo.
+
+### `primary_color`: `string`
+The organisation's primary brand colour as a hex string (e.g. `"#FF6B00"`). May be an empty string if not configured.
+
+## Example
+
+```json
+{
+  "organisation_name": "Fast Delivery",
+  "brand": "fast del",
+  "logo_url": "https://prod.parceltracer.app/static/logos/fastdel.png",
+  "primary_color": "#FF6B00"
+}
+```

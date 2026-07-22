@@ -35,7 +35,9 @@
               "models/customers",
               "models/areas",
               "models/customer-locations",
-              "models/orders"
+              "models/orders",
+              "models/invoices",
+              "models/profile"
             ]
           },
           {
